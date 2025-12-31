@@ -33,6 +33,7 @@ Rather than overloading features, the focus is on:
 - **Next.js** (App Router)
 - **TypeScript**
 - **Zustand** for state management
+- **Tailwind** style library
 - Custom React hooks for timer logic
 - Component-based architecture
 
