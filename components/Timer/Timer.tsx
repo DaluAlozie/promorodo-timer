@@ -13,6 +13,7 @@ import useSettings from "@/customHooks/useSettings";
 import Settings from "../Settings/Settings";
 import { useGeneralStore } from "@/stores/generalStore";
 import { BackgrounAudio } from "@/stores/audio";
+import { progressColor } from "@/stores/colors";
 import { BsGearFill } from "react-icons/bs";
 import { FiInfo } from "react-icons/fi";
 import Info from "../Info/Info";
@@ -38,6 +39,8 @@ export default function Timer() {
     backgroundAudio,
     pauseAudioOnBreak,
     firstVisit,
+    studyColor,
+    breakColor,
     initialised: initialisedSettings,
     setAudioReady,
     setOpenSettings,
@@ -53,9 +56,11 @@ export default function Timer() {
     "study" | "break" | "longbreak" | "midbreak"
   >("study");
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const prorogressColor = studying ? "#4b9c49" : "#d1a152";
-  const backgroundColor = studying ? "#7aa679" : "#d1b06dF1";
+  const backgroundColor = studying ? studyColor : breakColor;
+  const prorogressColor = progressColor(backgroundColor);
   const [openInfo, setOpenInfo] = useState(false);
+  const [fadeColors, setFadeColors] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const onExpire = useCallback(() => {
     if (!studying) {
@@ -184,6 +189,16 @@ export default function Timer() {
     restart(getTimestamp(timerTotal), false);
   }, [initialisedSettings]);
 
+  // Fades the background between study and break, but only after the saved
+  // colours are applied, so a page load doesn't fade from the default.
+  // Reading the computed style makes the browser apply the loaded colour
+  // before the transition is switched on.
+  useEffect(() => {
+    if (!initialisedSettings || !containerRef.current) return;
+    void getComputedStyle(containerRef.current).backgroundColor;
+    setFadeColors(true);
+  }, [initialisedSettings]);
+
   // Displays guide if it is the users first visit
   useEffect(() => {
     if (initialisedSettings) {
@@ -251,7 +266,13 @@ export default function Timer() {
 
   return (
     <div
-      className="relative flex h-full min-h-max w-screen flex-col items-center justify-between overflow-x-hidden text-gray-200"
+      ref={containerRef}
+      className={
+        "relative flex h-full min-h-max w-screen flex-col items-center justify-between overflow-x-hidden text-gray-200" +
+        (fadeColors
+          ? " transition-colors duration-500 motion-reduce:transition-none"
+          : "")
+      }
       style={{ backgroundColor: backgroundColor, textAlign: "center" }}
     >
       {/* Heading */}

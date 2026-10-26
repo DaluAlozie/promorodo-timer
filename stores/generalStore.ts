@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist, StateStorage } from "zustand/middleware";
 import { BackgrounAudio } from "./audio";
+import { DEFAULT_BREAK_COLOR, DEFAULT_STUDY_COLOR, HEX_COLOR } from "./colors";
 
 type GeneralStore = {
   initialised: boolean;
@@ -22,6 +23,8 @@ type GeneralStore = {
   cycle: number;
   timerTotal: number;
   firstVisit: boolean;
+  studyColor: string;
+  breakColor: string;
 
   setInitialised: (initialised: boolean) => void;
   setOpenSettings: (open: boolean) => void;
@@ -45,11 +48,12 @@ type GeneralStore = {
   setTimerTotal: (total: number) => void;
 
   setFirstVisit: (firstVisit: boolean) => void;
+  setStudyColor: (color: string) => void;
+  setBreakColor: (color: string) => void;
 };
 
-// Settings and session progress that survive a reload. Runtime UI/audio
-// flags (initialised, openSettings, audioReady, audioPaused) are left out.
-const PERSISTED_KEYS = [
+// Keys the old useSettings hook stored one per localStorage entry
+const LEGACY_KEYS = [
   "studyTime",
   "breakTime",
   "midBreakTime",
@@ -67,6 +71,14 @@ const PERSISTED_KEYS = [
   "studying",
 ] as const satisfies readonly (keyof GeneralStore)[];
 
+// Settings and session progress that survive a reload. Runtime UI/audio
+// flags (initialised, openSettings, audioReady, audioPaused) are left out.
+const PERSISTED_KEYS = [
+  ...LEGACY_KEYS,
+  "studyColor",
+  "breakColor",
+] as const satisfies readonly (keyof GeneralStore)[];
+
 type PersistedState = Pick<GeneralStore, (typeof PERSISTED_KEYS)[number]>;
 
 const STORAGE_KEY = "general-store";
@@ -78,7 +90,7 @@ const LEGACY_VERSION = 0;
 // under its own localStorage key, and removes those keys.
 function takeLegacySettings(): Partial<PersistedState> | null {
   const legacy: Record<string, unknown> = {};
-  for (const key of PERSISTED_KEYS) {
+  for (const key of LEGACY_KEYS) {
     const value = localStorage.getItem(key);
     if (value === null) continue;
     try {
@@ -89,7 +101,7 @@ function takeLegacySettings(): Partial<PersistedState> | null {
     }
   }
   if (Object.keys(legacy).length === 0) return null;
-  PERSISTED_KEYS.forEach((key) => localStorage.removeItem(key));
+  LEGACY_KEYS.forEach((key) => localStorage.removeItem(key));
   return legacy as Partial<PersistedState>;
 }
 
@@ -140,6 +152,8 @@ export const useGeneralStore = create<GeneralStore>()(
       timerTotal: 25,
 
       firstVisit: true,
+      studyColor: DEFAULT_STUDY_COLOR,
+      breakColor: DEFAULT_BREAK_COLOR,
 
       setInitialised: (initialised) => set(() => ({ initialised })),
       setOpenSettings: (open) => set(() => ({ openSettings: open })),
@@ -165,6 +179,8 @@ export const useGeneralStore = create<GeneralStore>()(
       setTimerTotal: (total) => set(() => ({ timerTotal: total })),
 
       setFirstVisit: (firstVisit) => set(() => ({ firstVisit })),
+      setStudyColor: (color) => set(() => ({ studyColor: color })),
+      setBreakColor: (color) => set(() => ({ breakColor: color })),
     }),
     {
       name: STORAGE_KEY,
@@ -176,6 +192,19 @@ export const useGeneralStore = create<GeneralStore>()(
         ) as PersistedState,
       // Legacy settings are already in the current shape
       migrate: (persistedState) => persistedState as PersistedState,
+      // Fall back to the default colours if a stored one isn't a valid hex
+      // colour, so the background never ends up blank
+      merge: (persistedState, currentState) => {
+        const state = {
+          ...currentState,
+          ...(persistedState as Partial<PersistedState>),
+        };
+        if (!HEX_COLOR.test(state.studyColor))
+          state.studyColor = DEFAULT_STUDY_COLOR;
+        if (!HEX_COLOR.test(state.breakColor))
+          state.breakColor = DEFAULT_BREAK_COLOR;
+        return state;
+      },
       // Hydrated on the client by useSettings so server and client render
       // the same defaults first
       skipHydration: true,

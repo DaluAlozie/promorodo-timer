@@ -10,9 +10,17 @@ import RadioOption from "../Form/RadioGroupItem";
 import { SwitchInput } from "../Form/SwitchInput";
 import { useCollapse } from "react-collapsed";
 import { SliderInput } from "../Form/SliderInput";
+import { ColorSwatchInput } from "../Form/ColorSwatchInput";
 import { audioLabelMap, BackgrounAudio } from "@/stores/audio";
 import { NOISE, WATER, FIRE, RAIN, CHATTER, NATURE } from "@/stores/audio";
 import { useGeneralStore } from "@/stores/generalStore";
+import {
+  COLOR_PRESETS,
+  DEFAULT_BREAK_COLOR,
+  DEFAULT_STUDY_COLOR,
+  HEX_COLOR,
+  progressColor,
+} from "@/stores/colors";
 
 interface FormValues {
   studyTime: number;
@@ -27,6 +35,8 @@ interface FormValues {
   backgrounAudioEnabled: boolean;
   volume: number;
   pauseAudioOnBreak: boolean;
+  studyColor: string;
+  breakColor: string;
 }
 
 const schema = yup.object().shape({
@@ -80,6 +90,14 @@ const schema = yup.object().shape({
     .min(0, "Volume must be at least 0")
     .max(100, "Volume must be at most 100"),
   pauseAudioOnBreak: yup.boolean().required(),
+  studyColor: yup
+    .string()
+    .required("Study colour is required")
+    .matches(HEX_COLOR, "Invalid colour"),
+  breakColor: yup
+    .string()
+    .required("Break colour is required")
+    .matches(HEX_COLOR, "Invalid colour"),
 });
 
 export default function Settings({ close }: { close: () => void }) {
@@ -106,6 +124,10 @@ export default function Settings({ close }: { close: () => void }) {
     setAudioVolume,
     pauseAudioOnBreak,
     setPauseAudioOnBreak,
+    studyColor,
+    setStudyColor,
+    breakColor,
+    setBreakColor,
   } = useGeneralStore();
 
   const [checksChanged, setChecksChanged] = useState(false);
@@ -131,12 +153,16 @@ export default function Settings({ close }: { close: () => void }) {
       backgrounAudioEnabled: backgroundAudio !== BackgrounAudio.NONE,
       volume: audioVolume,
       pauseAudioOnBreak,
+      studyColor,
+      breakColor,
     },
     resolver: yupResolver(schema),
     mode: "onChange",
   });
 
   const backgroundAudioEnabled = watch("backgrounAudioEnabled");
+  const studyColorPreview = watch("studyColor");
+  const breakColorPreview = watch("breakColor");
 
   // Set the default values for the form fields when the component mounts
   // and when the settiings are initrialized
@@ -153,6 +179,8 @@ export default function Settings({ close }: { close: () => void }) {
     setValue("backgrounAudioEnabled", backgroundAudio !== BackgrounAudio.NONE);
     setValue("volume", audioVolume);
     setValue("pauseAudioOnBreak", pauseAudioOnBreak);
+    setValue("studyColor", studyColor);
+    setValue("breakColor", breakColor);
   }, [
     studyTime,
     breakTime,
@@ -165,6 +193,8 @@ export default function Settings({ close }: { close: () => void }) {
     backgroundAudio,
     audioVolume,
     pauseAudioOnBreak,
+    studyColor,
+    breakColor,
     setValue,
   ]);
 
@@ -189,6 +219,8 @@ export default function Settings({ close }: { close: () => void }) {
       if (audioVolume !== data.volume) setAudioVolume(data.volume);
       if (pauseAudioOnBreak !== data.pauseAudioOnBreak)
         setPauseAudioOnBreak(data.pauseAudioOnBreak);
+      if (studyColor !== data.studyColor) setStudyColor(data.studyColor);
+      if (breakColor !== data.breakColor) setBreakColor(data.breakColor);
 
       toast.success("Settings saved successfully!");
       setChecksChanged(false);
@@ -207,6 +239,8 @@ export default function Settings({ close }: { close: () => void }) {
       backgroundAudio,
       audioVolume,
       pauseAudioOnBreak,
+      studyColor,
+      breakColor,
       setStudyTime,
       setBreakTime,
       setMidBreakTime,
@@ -218,6 +252,8 @@ export default function Settings({ close }: { close: () => void }) {
       setBackgroundAudio,
       setAudioVolume,
       setPauseAudioOnBreak,
+      setStudyColor,
+      setBreakColor,
       reset,
       close,
     ],
@@ -241,6 +277,8 @@ export default function Settings({ close }: { close: () => void }) {
       backgrounAudioEnabled: false,
       volume: 50,
       pauseAudioOnBreak: false,
+      studyColor: DEFAULT_STUDY_COLOR,
+      breakColor: DEFAULT_BREAK_COLOR,
     };
     setStudyTime(defaults.studyTime);
     setBreakTime(defaults.breakTime);
@@ -253,6 +291,8 @@ export default function Settings({ close }: { close: () => void }) {
     setBackgroundAudio(defaults.backgroundAudio);
     setAudioVolume(defaults.volume);
     setPauseAudioOnBreak(defaults.pauseAudioOnBreak);
+    setStudyColor(defaults.studyColor);
+    setBreakColor(defaults.breakColor);
     setValue("backgrounAudioEnabled", defaults.backgrounAudioEnabled);
     setChecksChanged(false);
     reset(defaults);
@@ -269,6 +309,8 @@ export default function Settings({ close }: { close: () => void }) {
     setBackgroundAudio,
     setAudioVolume,
     setPauseAudioOnBreak,
+    setStudyColor,
+    setBreakColor,
     setValue,
     reset,
   ]);
@@ -428,6 +470,27 @@ export default function Settings({ close }: { close: () => void }) {
         )}
       </div>
 
+      {/* Colours */}
+      <div className="mb-5">
+        <span className="ml-2 text-2xl text-gray-900 opacity-35">Colours</span>
+        <ColorPreview
+          studyColor={studyColorPreview}
+          breakColor={breakColorPreview}
+        />
+        <ColorSwatchInput
+          name="studyColor"
+          control={control}
+          label="Study"
+          presets={COLOR_PRESETS}
+        />
+        <ColorSwatchInput
+          name="breakColor"
+          control={control}
+          label="Break"
+          presets={COLOR_PRESETS}
+        />
+      </div>
+
       {/* Background Audio */}
       <SwitchInput
         name="backgrounAudioEnabled"
@@ -496,6 +559,37 @@ const AudioSection = ({
           label={audioLabelMap[option]}
           value={option}
         />
+      ))}
+    </div>
+  );
+};
+
+// Mini version of the timer screen for each mode, so colour changes can be
+// seen before saving
+const ColorPreview = ({
+  studyColor,
+  breakColor,
+}: {
+  studyColor: string;
+  breakColor: string;
+}) => {
+  return (
+    <div aria-hidden className="mb-3 flex gap-3">
+      {[
+        { title: "Study", color: studyColor },
+        { title: "Break", color: breakColor },
+      ].map(({ title, color }) => (
+        <div
+          key={title}
+          className="flex flex-1 flex-col items-center rounded-2xl pt-1 pb-3 text-gray-200 transition-colors motion-reduce:transition-none"
+          style={{ backgroundColor: color }}
+        >
+          <span className="h-8 text-4xl">{title}</span>
+          <div
+            className="h-1.5 w-2/3 rounded-full"
+            style={{ backgroundColor: progressColor(color) }}
+          />
+        </div>
       ))}
     </div>
   );
