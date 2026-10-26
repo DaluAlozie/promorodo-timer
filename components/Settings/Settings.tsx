@@ -12,7 +12,7 @@ import { useCollapse } from "react-collapsed";
 import { SliderInput } from "../Form/SliderInput";
 import { audioLabelMap, BackgrounAudio } from "@/stores/audio";
 import { NOISE, WATER, FIRE, RAIN, CHATTER, NATURE } from "@/stores/audio";
-import { useGeneralStore } from "@/stores/GerneralStore";
+import { useGeneralStore } from "@/stores/generalStore";
 
 interface FormValues {
   studyTime: number;

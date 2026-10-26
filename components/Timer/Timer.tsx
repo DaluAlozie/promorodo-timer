@@ -11,7 +11,7 @@ import { BsSkipForwardFill } from "react-icons/bs";
 import Modal from "../Modal/Modal";
 import useSettings from "@/customHooks/useSettings";
 import Settings from "../Settings/Settings";
-import { useGeneralStore } from "@/stores/GerneralStore";
+import { useGeneralStore } from "@/stores/generalStore";
 import { BackgrounAudio } from "@/stores/audio";
 import { BsGearFill } from "react-icons/bs";
 import { FiInfo } from "react-icons/fi";

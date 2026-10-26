@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import { useGeneralStore } from "@/stores/GerneralStore";
+import { useGeneralStore } from "@/stores/generalStore";
 import { BackgrounAudio } from "@/stores/audio";
 
 export default function BackgroundAudioPlayer() {
