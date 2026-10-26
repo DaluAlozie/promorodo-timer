@@ -14,6 +14,7 @@ import Settings from "../Settings/Settings";
 import { useGeneralStore } from "@/stores/generalStore";
 import { BackgrounAudio } from "@/stores/audio";
 import { progressColor } from "@/stores/colors";
+import { backgroundLoop } from "../BackgrounAudioPlayer/loopPlayer";
 import { BsGearFill } from "react-icons/bs";
 import { FiInfo } from "react-icons/fi";
 import Info from "../Info/Info";
@@ -355,6 +356,8 @@ export default function Timer() {
               disabled={timerStarted || !initialisedSettings}
               onClick={() => {
                 setTimerStarted(true);
+                // Audio can only be started from a user gesture
+                backgroundLoop.unlock();
                 setAudioReady(true);
                 start();
               }}
