@@ -32,6 +32,12 @@ export enum BackgrounAudio {
   FOREST = "forest",
   NIGHT = "night",
 
+  // Lofi
+  LOFI_RELAXING = "lofi-relaxing",
+  LOFI_BEAUTIFUL = "lofi-beautiful",
+  LOFI_REEL = "lofi-reel",
+  LOFI_MIX = "lofi-mix",
+
   NONE = "none",
 }
 
@@ -72,9 +78,24 @@ const RAIN = [
 
 const NOISE = [BackgrounAudio.WHITE_NOISE, BackgrounAudio.BROWN_NOISE];
 
-const ALL = [...CHATTER, ...FIRE, ...WATER, ...RAIN, ...NOISE];
+const LOFI = [
+  BackgrounAudio.LOFI_RELAXING,
+  BackgrounAudio.LOFI_BEAUTIFUL,
+  BackgrounAudio.LOFI_REEL,
+  BackgrounAudio.LOFI_MIX,
+];
 
-export { ALL, NOISE, RAIN, CHATTER, FIRE, WATER, NATURE };
+const ALL = [
+  ...CHATTER,
+  ...FIRE,
+  ...WATER,
+  ...RAIN,
+  ...NOISE,
+  ...NATURE,
+  ...LOFI,
+];
+
+export { ALL, NOISE, RAIN, CHATTER, FIRE, WATER, NATURE, LOFI };
 
 export const audioLabelMap: Record<BackgrounAudio, string> = {
   [BackgrounAudio.CALMING_RAIN]: "Calming",
@@ -107,6 +128,11 @@ export const audioLabelMap: Record<BackgrounAudio, string> = {
   [BackgrounAudio.JUNGLE]: "Jungle",
   [BackgrounAudio.FOREST]: "Forest",
   [BackgrounAudio.NIGHT]: "Night",
+
+  [BackgrounAudio.LOFI_RELAXING]: "Relaxing",
+  [BackgrounAudio.LOFI_BEAUTIFUL]: "Beautiful",
+  [BackgrounAudio.LOFI_REEL]: "Chill",
+  [BackgrounAudio.LOFI_MIX]: "Mix",
 
   [BackgrounAudio.NONE]: "none",
 };

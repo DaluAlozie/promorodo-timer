@@ -12,7 +12,15 @@ import { useCollapse } from "react-collapsed";
 import { SliderInput } from "../Form/SliderInput";
 import { ColorSwatchInput } from "../Form/ColorSwatchInput";
 import { audioLabelMap, BackgrounAudio } from "@/stores/audio";
-import { NOISE, WATER, FIRE, RAIN, CHATTER, NATURE } from "@/stores/audio";
+import {
+  NOISE,
+  WATER,
+  FIRE,
+  RAIN,
+  CHATTER,
+  NATURE,
+  LOFI,
+} from "@/stores/audio";
 import { useGeneralStore } from "@/stores/generalStore";
 import {
   COLOR_PRESETS,
@@ -500,6 +508,7 @@ export default function Settings({ close }: { close: () => void }) {
         {...getToggleProps()}
       />
       <div className="w-full" {...getCollapseProps()}>
+        <AudioSection title="Lofi" options={LOFI} control={control} />
         <AudioSection title="Rain" options={RAIN} control={control} />
         <AudioSection title="Chatter" options={CHATTER} control={control} />
         <AudioSection title="Water" options={WATER} control={control} />
