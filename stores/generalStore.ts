@@ -3,6 +3,20 @@ import { createJSONStorage, persist, StateStorage } from "zustand/middleware";
 import { BackgrounAudio } from "./audio";
 import { DEFAULT_BREAK_COLOR, DEFAULT_STUDY_COLOR, HEX_COLOR } from "./colors";
 
+// The countdown in progress, saved so it survives a page refresh: when it
+// will end while running, or how much was left when paused
+export type SavedTimer =
+  | { running: true; endsAt: number }
+  | { running: false; remaining: number };
+
+const isSavedTimer = (value: unknown): value is SavedTimer => {
+  if (typeof value !== "object" || value === null) return false;
+  const timer = value as Record<string, unknown>;
+  return timer.running === true
+    ? Number.isFinite(timer.endsAt)
+    : timer.running === false && Number.isFinite(timer.remaining);
+};
+
 type GeneralStore = {
   initialised: boolean;
   openSettings: boolean;
@@ -25,6 +39,9 @@ type GeneralStore = {
   firstVisit: boolean;
   studyColor: string;
   breakColor: string;
+  notifications: boolean;
+  // null until the timer has been started
+  savedTimer: SavedTimer | null;
 
   setInitialised: (initialised: boolean) => void;
   setOpenSettings: (open: boolean) => void;
@@ -50,6 +67,8 @@ type GeneralStore = {
   setFirstVisit: (firstVisit: boolean) => void;
   setStudyColor: (color: string) => void;
   setBreakColor: (color: string) => void;
+  setNotifications: (notifications: boolean) => void;
+  setSavedTimer: (timer: SavedTimer | null) => void;
 };
 
 // Keys the old useSettings hook stored one per localStorage entry
@@ -77,6 +96,8 @@ const PERSISTED_KEYS = [
   ...LEGACY_KEYS,
   "studyColor",
   "breakColor",
+  "notifications",
+  "savedTimer",
 ] as const satisfies readonly (keyof GeneralStore)[];
 
 type PersistedState = Pick<GeneralStore, (typeof PERSISTED_KEYS)[number]>;
@@ -154,6 +175,8 @@ export const useGeneralStore = create<GeneralStore>()(
       firstVisit: true,
       studyColor: DEFAULT_STUDY_COLOR,
       breakColor: DEFAULT_BREAK_COLOR,
+      notifications: false,
+      savedTimer: null,
 
       setInitialised: (initialised) => set(() => ({ initialised })),
       setOpenSettings: (open) => set(() => ({ openSettings: open })),
@@ -181,6 +204,8 @@ export const useGeneralStore = create<GeneralStore>()(
       setFirstVisit: (firstVisit) => set(() => ({ firstVisit })),
       setStudyColor: (color) => set(() => ({ studyColor: color })),
       setBreakColor: (color) => set(() => ({ breakColor: color })),
+      setNotifications: (notifications) => set(() => ({ notifications })),
+      setSavedTimer: (savedTimer) => set(() => ({ savedTimer })),
     }),
     {
       name: STORAGE_KEY,
@@ -192,8 +217,9 @@ export const useGeneralStore = create<GeneralStore>()(
         ) as PersistedState,
       // Legacy settings are already in the current shape
       migrate: (persistedState) => persistedState as PersistedState,
-      // Fall back to the default colours if a stored one isn't a valid hex
-      // colour, so the background never ends up blank
+      // Fall back to defaults for stored colours that aren't valid hex
+      // colours, so the background never ends up blank, and drop a malformed
+      // saved timer
       merge: (persistedState, currentState) => {
         const state = {
           ...currentState,
@@ -203,6 +229,7 @@ export const useGeneralStore = create<GeneralStore>()(
           state.studyColor = DEFAULT_STUDY_COLOR;
         if (!HEX_COLOR.test(state.breakColor))
           state.breakColor = DEFAULT_BREAK_COLOR;
+        if (!isSavedTimer(state.savedTimer)) state.savedTimer = null;
         return state;
       },
       // Hydrated on the client by useSettings so server and client render

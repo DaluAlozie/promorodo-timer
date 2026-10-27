@@ -38,6 +38,16 @@ export default function Info() {
             Ambient sounds help focus—adjust volume or pause during breaks.
           </div>
         </div>
+        {/* Keyboard Shortcuts */}
+        <div>
+          <div className="opacity-70">Keyboard Shortcuts:</div>
+          <ul className="list-disc pl-10">
+            <li>Space: start, pause or resume</li>
+            <li>Right arrow: next session</li>
+            <li>Left arrow: previous session</li>
+            <li>M: mute or unmute background audio</li>
+          </ul>
+        </div>
       </div>
       <p className="mt-4 text-2xl text-gray-700 opacity-85">
         Change these in the Settings menu.

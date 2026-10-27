@@ -45,6 +45,7 @@ interface FormValues {
   pauseAudioOnBreak: boolean;
   studyColor: string;
   breakColor: string;
+  notifications: boolean;
 }
 
 const schema = yup.object().shape({
@@ -106,7 +107,10 @@ const schema = yup.object().shape({
     .string()
     .required("Break colour is required")
     .matches(HEX_COLOR, "Invalid colour"),
+  notifications: yup.boolean().required(),
 });
+
+const notificationsSupported = () => typeof Notification !== "undefined";
 
 export default function Settings({ close }: { close: () => void }) {
   const {
@@ -136,6 +140,8 @@ export default function Settings({ close }: { close: () => void }) {
     setStudyColor,
     breakColor,
     setBreakColor,
+    notifications,
+    setNotifications,
   } = useGeneralStore();
 
   const [checksChanged, setChecksChanged] = useState(false);
@@ -143,6 +149,7 @@ export default function Settings({ close }: { close: () => void }) {
   const {
     control,
     handleSubmit,
+    getValues,
     setValue,
     reset,
     watch,
@@ -163,6 +170,7 @@ export default function Settings({ close }: { close: () => void }) {
       pauseAudioOnBreak,
       studyColor,
       breakColor,
+      notifications,
     },
     resolver: yupResolver(schema),
     mode: "onChange",
@@ -189,6 +197,7 @@ export default function Settings({ close }: { close: () => void }) {
     setValue("pauseAudioOnBreak", pauseAudioOnBreak);
     setValue("studyColor", studyColor);
     setValue("breakColor", breakColor);
+    setValue("notifications", notifications);
   }, [
     studyTime,
     breakTime,
@@ -203,6 +212,7 @@ export default function Settings({ close }: { close: () => void }) {
     pauseAudioOnBreak,
     studyColor,
     breakColor,
+    notifications,
     setValue,
   ]);
 
@@ -229,6 +239,8 @@ export default function Settings({ close }: { close: () => void }) {
         setPauseAudioOnBreak(data.pauseAudioOnBreak);
       if (studyColor !== data.studyColor) setStudyColor(data.studyColor);
       if (breakColor !== data.breakColor) setBreakColor(data.breakColor);
+      if (notifications !== data.notifications)
+        setNotifications(data.notifications);
 
       toast.success("Settings saved successfully!");
       setChecksChanged(false);
@@ -249,6 +261,7 @@ export default function Settings({ close }: { close: () => void }) {
       pauseAudioOnBreak,
       studyColor,
       breakColor,
+      notifications,
       setStudyTime,
       setBreakTime,
       setMidBreakTime,
@@ -262,6 +275,7 @@ export default function Settings({ close }: { close: () => void }) {
       setPauseAudioOnBreak,
       setStudyColor,
       setBreakColor,
+      setNotifications,
       reset,
       close,
     ],
@@ -287,6 +301,7 @@ export default function Settings({ close }: { close: () => void }) {
       pauseAudioOnBreak: false,
       studyColor: DEFAULT_STUDY_COLOR,
       breakColor: DEFAULT_BREAK_COLOR,
+      notifications: false,
     };
     setStudyTime(defaults.studyTime);
     setBreakTime(defaults.breakTime);
@@ -301,6 +316,7 @@ export default function Settings({ close }: { close: () => void }) {
     setPauseAudioOnBreak(defaults.pauseAudioOnBreak);
     setStudyColor(defaults.studyColor);
     setBreakColor(defaults.breakColor);
+    setNotifications(defaults.notifications);
     setValue("backgrounAudioEnabled", defaults.backgrounAudioEnabled);
     setChecksChanged(false);
     reset(defaults);
@@ -319,9 +335,35 @@ export default function Settings({ close }: { close: () => void }) {
     setPauseAudioOnBreak,
     setStudyColor,
     setBreakColor,
+    setNotifications,
     setValue,
     reset,
   ]);
+
+  // Asks for notification permission when the setting is turned on, while
+  // the click still counts as a user gesture, and turns it back off if the
+  // browser won't allow notifications
+  const requestNotifications = useCallback(() => {
+    const blocked = () => {
+      // The prompt can be answered after the box was unticked again, or
+      // after the settings were saved and closed, so check both
+      const wanted =
+        getValues("notifications") || useGeneralStore.getState().notifications;
+      if (!wanted) return;
+      setValue("notifications", false, { shouldDirty: true });
+      setNotifications(false);
+      toast.error("Notifications are blocked for this site in your browser");
+    };
+    if (Notification.permission === "granted") return;
+    if (Notification.permission === "denied") return blocked();
+    // Older Safari versions return nothing here and only take a callback
+    const result = Notification.requestPermission() as
+      | Promise<NotificationPermission>
+      | undefined;
+    void result?.then((permission) => {
+      if (permission !== "granted") blocked();
+    });
+  }, [getValues, setValue, setNotifications]);
 
   // Reset the background audio to NONE if the background audio is disabled
   // and set it to CALMING_RAIN as the default if the background audio is enabled
@@ -461,6 +503,18 @@ export default function Settings({ close }: { close: () => void }) {
             label="Pause Audio on Break"
             onPress={() => setChecksChanged(true)}
           />
+          {notificationsSupported() && (
+            <CheckboxInput
+              name="notifications"
+              control={control}
+              id="notifications"
+              label="Notify When Session Ends"
+              onPress={() => {
+                setChecksChanged(true);
+                if (getValues("notifications")) requestNotifications();
+              }}
+            />
+          )}
         </div>
         {backgroundAudioEnabled && (
           <button
